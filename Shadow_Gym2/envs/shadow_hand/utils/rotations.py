@@ -208,7 +208,6 @@ def mat2quat(mat):
     K[..., 3, 2] = Qxy - Qyx
     K[..., 3, 3] = Qxx + Qyy + Qzz
     K /= 3.0
-    # TODO: vectorize this -- probably could be made faster
     q = np.empty(K.shape[:-2] + (4,))
     it = np.nditer(q[..., 0], flags=["multi_index"])
     while not it.finished:
@@ -233,7 +232,6 @@ def quat2euler(quat):
 
 
 def subtract_euler(e1, e2):
-
     assert e1.shape == e2.shape
     assert e1.shape[-1] == 3
     q1 = euler2quat(e1)
@@ -357,7 +355,7 @@ def quat2point_quat(quat):
     xyz = _quat[:, 1:]
     xyz[np.squeeze(np.abs(np.sin(angle / 2))) >= 1e-5] = (xyz / np.sin(angle / 2))[
         np.squeeze(np.abs(np.sin(angle / 2))) >= 1e-5
-    ]
+        ]
     return np.concatenate([np.sin(angle), np.cos(angle), xyz], axis=-1)
 
 
@@ -372,7 +370,7 @@ def point_quat2quat(quat):
     qxyz = _quat[:, 2:]
     qxyz[np.squeeze(np.abs(np.sin(angle / 2))) >= 1e-5] = (qxyz * np.sin(angle / 2))[
         np.squeeze(np.abs(np.sin(angle / 2))) >= 1e-5
-    ]
+        ]
     return np.concatenate([qw, qxyz], axis=-1)
 
 
@@ -505,6 +503,7 @@ def quat_slerp(quat0, quat1, fraction, shortestpath=True):
     q0 += q1
     return q0
 
+
 # Below functions are additions to the provided rotations.py file
 def quat_from_angle_and_axis(angle, axis):
     """Convert angle axis representation of a rotation to a quaternion."""
@@ -513,6 +512,7 @@ def quat_from_angle_and_axis(angle, axis):
     quat = np.concatenate([[np.cos(angle / 2.0)], np.sin(angle / 2.0) * axis])
     quat /= np.linalg.norm(quat)
     return quat
+
 
 def angular_difference_abs(quat1: np.ndarray, quat2: np.ndarray) -> np.float32:
     """
@@ -527,6 +527,7 @@ def angular_difference_abs(quat1: np.ndarray, quat2: np.ndarray) -> np.float32:
     quat_diff = quat_mul(quat1, quat_conjugate(quat2))
     axis, angle = quat2axisangle(quat_diff)
     return np.abs(angle)
+
 
 def euler2quat_vel(euler: np.ndarray):
     """

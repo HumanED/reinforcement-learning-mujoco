@@ -1,10 +1,7 @@
-import copy
 import os
 from typing import Optional
 import mujoco
-
 import numpy as np
-
 import gymnasium
 from gymnasium import spaces
 from gymnasium.utils import EzPickle
@@ -54,63 +51,71 @@ class MujocoRobot(gymnasium.Env, EzPickle):
     def __init__(
             self,
             render_mode: Optional[str] = None,
-            seed=None
     ):
-        """Initialize the hand and fetch robot superclass.
+        """
+        Initialize environment
         Args:
             render_mode (optional string): type of rendering mode, "human" for window rendering and "rgb_array" for offscreen. Defaults to None.
         """
-
         EzPickle.__init__(self, render_mode)
 
-        # n_actions (integer): size of the action space.
-        n_actions = 20
-        # n_obs (integer): number of observations
-        n_obs = 85
-        self.max_timesteps = 120
-        self.timesteps = 0
-        self.fullpath = os.path.join(os.path.dirname(__file__), "resources", "hand", "manipulate_block.xml")
-        # n_substeps (integer): number of MuJoCo simulation timesteps per Gymnasium step.
-        self.n_substeps = 10
-        # # initial_qpos (dict): a dictionary of joint names and values that define the initial configuration
-        # self.initial_qpos = np.copy(self.data.qpos)
-        # width (optional integer): width of each rendered frame. Defaults to DEFAULT_SIZE.
-        self.width = 1200
-        # height (optional integer): height of each rendered frame . Defaults to DEFAULT_SIZE.
-        self.height = 800
+        # SETTINGS
+        # self.step_limit (integer)         number of calls to step() before episode is cut short (truncates)
+        # n_substeps (integer)              number of MuJoCo simulation timesteps per call to step()
+        # screen_width                      screen_width of each rendered frame. Defaults to DEFAULT_SIZE.
+        # screen_height                     screen_height of each rendered frame . Defaults to DEFAULT_SIZE.
+        # rotation_threshold (float)        the threshold after which the rotation of a goal is considered achieved. Unit is radians
+        # relative_control (bool)           Whether or not the hand is actuated in absolute joint positions or relative to the current joint position
+        # randomize_initial_rotation (bool) Whether to set cube orientation to a random orientation at start of episode
+        # self.target_euler                 Fixed target orientation
+        # n_actions (intege)                size of the action space.
+        # n_obs (integer)                   number of observations
+        # self.fullpath                     Path to Mujoco XML file holding all information on the simulation environment
 
-        # rotation_threshold (float, in radians): the threshold after which the rotation of a goal is considered achieved
+        self.step_limit = 120
+        self.n_substeps = 40
         self.rotation_threshold = 0.4
-        # relative_control (boolean): whether or not the hand is actuated in absolute joint positions or relative to the current state
         self.relative_control = False
-
-        self.previous_angular_diff = np.pi
-
         self.randomize_initial_rotation = True
+        self.target_euler = [0, 0, 0]
 
-        self._load_mujoco_robot()
+        n_actions = 20
+        n_obs = 85
+        self.action_space = gymnasium.spaces.MultiDiscrete(nvec=[11] * n_actions)
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(n_obs,), dtype=np.float32)
 
-        self.goal = np.zeros(0)
+        self.fullpath = os.path.join(os.path.dirname(__file__), "resources", "hand", "manipulate_block.xml")
+        self.screen_width = 1200
+        self.screen_height = 800
+
+        # END SETTINGS
 
         dt = self.model.opt.timestep * self.n_substeps
         assert (
                 int(np.round(1.0 / dt)) == self.metadata["render_fps"]
         ), f'Expected value: {int(np.round(1.0 / dt))}, Actual value: {self.metadata["render_fps"]}'
-
-        self.action_space = gymnasium.spaces.MultiDiscrete(nvec=[11] * n_actions)
-        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(n_obs,), dtype=np.float32)
-
+        self._load_mujoco_robot()
+        self.timesteps = 0
+        self.previous_angular_diff = np.pi
+        self.goal = np.zeros(0)
         self.render_mode = render_mode
-
         self.mujoco_renderer = MujocoRenderer(
             self.model,
             self.data,
             DEFAULT_CAMERA_CONFIG,
         )
 
-        self.parallel_quats = [
-            rotations.euler2quat(r) for r in rotations.get_parallel_rotations()
-        ]
+    def _load_mujoco_robot(self):
+        """
+        Loads XML file containing all information about the cube and hand. Runs only once when gym.make() is called
+        """
+        self.model = mujoco.MjModel.from_xml_path(self.fullpath)
+        self.data = mujoco.MjData(self.model)
+        self._model_names = mujoco_utils.MujocoModelNames(self.model)
+        self.fingertip_body_names = list(filter(lambda name: name.endswith("distal"), self._model_names.body_names))
+
+        self.model.vis.global_.offwidth = self.screen_width
+        self.model.vis.global_.offheight = self.screen_height
 
     def reset(
             self,
@@ -118,39 +123,31 @@ class MujocoRobot(gymnasium.Env, EzPickle):
             seed: Optional[int] = None,
             options: Optional[dict] = None,
     ):
-        """Reset the environment"""
+        """
+        Reset the environment
+        """
+        # Reset environment state
         super().reset(seed=seed)
         self.timesteps = 0
         self.previous_angular_diff = np.pi
-        self.goal = self._compute_goal().copy()
         self._reset_sim()
+
+        # Compute initial goal
+        self.goal = self._compute_goal()
+
         obs = self._get_obs()
         if self.render_mode == "human":
             self.render()
         return obs, {}
 
     def _compute_goal(self):
-        # Select a goal for the object rotation.
-        target_euler = [0, 0, 0]
-        target_quat = rotations.euler2quat(target_euler)
+        """Returns goal quaternion"""
+        target_quat = rotations.euler2quat(self.target_euler)
         target_quat /= np.linalg.norm(target_quat)  # normalized quaternion
         return target_quat
 
-    def _load_mujoco_robot(self):
-        """Runs only once when gym.make() is called"""
-        self.model = mujoco.MjModel.from_xml_path(self.fullpath)
-        self.data = mujoco.MjData(self.model)
-        self._model_names = mujoco_utils.MujocoModelNames(self.model)
-        self.fingertip_body_names = list(filter(lambda name: name.endswith("distal"), self._model_names.body_names))
-
-        self.model.vis.global_.offwidth = self.width
-        self.model.vis.global_.offheight = self.height
-
-        self.initial_time = self.data.time
-        self.initial_qvel = np.copy(self.data.qvel)
-
     def _reset_sim(self):
-        """Resets simulation, timestep counter and puts cube in a random orientation if setting is turned on"""
+        """Resets simulation and puts cube in a random orientation"""
         mujoco.mj_resetData(self.model, self.data)
         mujoco.mj_forward(self.model, self.data)
         initial_cube_qpos = mujoco_utils.get_joint_qpos(
@@ -176,41 +173,11 @@ class MujocoRobot(gymnasium.Env, EzPickle):
 
         # Run the simulation for a bunch of timesteps to let everything settle in.
         for _ in range(10):
-            self._apply_action(np.zeros(20))
+            self._apply_action(np.zeros(self.action_space.shape))
             try:
                 mujoco.mj_step(self.model, self.data, nstep=self.n_substeps)
             except Exception:
                 return False
-
-    def render(self):
-        """Render a frame of the MuJoCo simulation.
-
-        Returns:
-            rgb image (np.ndarray): if render_mode is "rgb_array", return a 3D image array.
-        """
-        # Assign current state to target object but offset a bit so that the actual object
-        # is not obscured.
-
-        offset_pos = np.array([1, 0.87, 0.3])
-        render_target = np.concatenate([offset_pos, self.goal])
-        assert render_target.shape == (7,), f"Actual goal shape {render_target.shape}"
-
-        mujoco_utils.set_joint_qpos(self.model, self.data, "target:joint", render_target)
-        mujoco_utils.set_joint_qvel(self.model, self.data, "target:joint", np.zeros(6))
-
-        if "object_hidden" in self._model_names.geom_names:
-            hidden_id = self._model_names.geom_name2id["object_hidden"]
-            self.model.geom_rgba[hidden_id, 3] = 1.0
-        mujoco.mj_forward(self.model, self.data)
-        return self.mujoco_renderer.render(self.render_mode)
-
-    def close(self):
-        """Close contains the code necessary to "clean up" the environment.
-
-        Terminates any existing WindowViewer instances in the Gymnaisum MujocoRenderer.
-        """
-        if self.mujoco_renderer is not None:
-            self.mujoco_renderer.close()
 
     def step(self, action: np.ndarray):
         """Run one timestep of the environment's dynamics using the agent actions.
@@ -219,13 +186,11 @@ class MujocoRobot(gymnasium.Env, EzPickle):
             action (np.ndarray): Control action to be applied to the agent and update the simulation. Should be of shape :attr:`action_space`.
 
         Returns:
-            observation (dictionary): Next observation due to the agent actions .It should satisfy the `GoalEnv` :attr:`observation_space`.
-            reward (integer): The reward as a result of taking the action. This is calculated by :meth:`compute_reward` of `GoalEnv`.
-            terminated (boolean): Whether the agent reaches the terminal state. This is calculated by :meth:`compute_terminated` of `GoalEnv`.
-            truncated (boolean): Whether the truncation condition outside the scope of the MDP is satisfied. Timically, due to a timelimit, but
-            it is also calculated in :meth:`compute_truncated` of `GoalEnv`.
-            info (dictionary): Contains auxiliary diagnostic information (helpful for debugging, learning, and logging). In this case there is a single
-            key `is_success` with a boolean value, True if the `achieved_goal` is the same as the `desired_goal`.
+            observation (np.ndarray): Next observation due to the agent actions .It should satisfy the `GoalEnv` :attr:`observation_space`.
+            reward (float): The reward as a result of taking the action. This is calculated by :meth:`compute_reward` of `GoalEnv`.
+            terminated (boolean): Whether the agent reaches the terminal state (cube is dropped)
+            truncated (boolean): Whether the agent exceeds maximum time for an episode
+            info (dictionary): Contains auxiliary diagnostic information (helpful for debugging, learning, and logging).
         """
         if np.array(action).shape != self.action_space.shape:
             raise ValueError("Action dimension mismatch")
@@ -235,31 +200,29 @@ class MujocoRobot(gymnasium.Env, EzPickle):
         action = action_low + (bin_sizes / 2) + (bin_sizes * action)
         self._apply_action(action)
 
-        if self.render_mode == "human":
-            self.render()
         obs = self._get_obs()
-
         info = {"success": False, "dropped": False}
 
         terminated = truncated = False
         cube_quat_idx = 18
         current_angular_diff = rotations.angular_difference_abs(obs[cube_quat_idx: cube_quat_idx + 4], self.goal)
-        if (current_angular_diff < self.rotation_threshold):
+        if current_angular_diff < self.rotation_threshold:
             reward = 5
-            terminated = True
             info["success"] = True
         else:
             reward = self.previous_angular_diff - current_angular_diff
             self.previous_angular_diff = current_angular_diff
         cube_posz_idx = 17
-        if (obs[cube_posz_idx] < -0.05):
+        if obs[cube_posz_idx] < -0.05:
             # Cube is dropped
             info["dropped"] = True
             terminated = True
             reward = -20
-
-        if (self.timesteps > self.max_timesteps):
+        if self.timesteps > self.step_limit:
             truncated = True
+
+        if self.render_mode == "human":
+            self.render()
 
         return obs, reward, terminated, truncated, info
 
@@ -301,18 +264,46 @@ class MujocoRobot(gymnasium.Env, EzPickle):
             self.model, self.data, self._model_names.joint_names
         )
         # Get position (x,y,z) of the 5 fingertips
-        fingertip_pos = mujoco_utils.robot_get_body_pos(self.model, self.data, self.fingertip_body_names).ravel()
+        fingertip_pos = mujoco_utils.get_all_body_pos(self.model, self.data, self.fingertip_body_names).ravel()
 
-        cube_qvel_raw = mujoco_utils.get_joint_qvel(self.model, self.data, "object:joint")
         # cube_qvel_raw is linear velocity (x,y,z) then angular velocity (x, y,z). We need the angular velocity bit as a quaternion
+        cube_qvel_raw = mujoco_utils.get_joint_qvel(self.model, self.data, "object:joint")
         cube_qvel = np.concatenate([cube_qvel_raw[:3], rotations.euler2quat_vel(cube_qvel_raw[3:])])
 
+        # cube position and orientation. (x,y,z, qw, qx, qy, qz)
         cube_qpos = mujoco_utils.get_joint_qpos(self.model, self.data, "object:joint")
 
-        # Relative orientation between cube's current orientation and goal orientation
-        # [..., 3] means take element with index 3, 4, 5, 6 which is the quaternion portion
-
         quat_diff = rotations.quat_mul(cube_qpos[..., 3:], rotations.quat_conjugate(self.goal))
-        observation = np.concatenate(
-            [fingertip_pos, cube_qpos, self.goal, quat_diff, robot_qpos, robot_qvel, cube_qvel])
+        observation = np.concatenate([fingertip_pos, cube_qpos, self.goal, quat_diff, robot_qpos, robot_qvel, cube_qvel])
         return observation
+
+    # --- other utility methods
+    def render(self):
+        """Render a frame of the Mujoco simulation.
+
+        Returns:
+            rgb image (np.ndarray): if render_mode is "rgb_array", return a 3D image array.
+        """
+        # Assign current state to target object but offset a bit so that the actual object
+        # is not obscured.
+
+        offset_pos = np.array([1, 0.87, 0.3])
+        render_target = np.concatenate([offset_pos, self.goal])
+        assert render_target.shape == (7,), f"Actual goal shape {render_target.shape}"
+
+        mujoco_utils.set_joint_qpos(self.model, self.data, "target:joint", render_target)
+        mujoco_utils.set_joint_qvel(self.model, self.data, "target:joint", np.zeros(6))
+
+        if "object_hidden" in self._model_names.geom_names:
+            hidden_id = self._model_names.geom_name2id["object_hidden"]
+            self.model.geom_rgba[hidden_id, 3] = 1.0
+        mujoco.mj_forward(self.model, self.data)
+        return self.mujoco_renderer.render(self.render_mode)
+
+    def close(self):
+        """
+        Terminates any existing WindowViewer instances in the Gymnaisum MujocoRenderer.
+        Call this method to prevent errors when rendering.
+        """
+        if self.mujoco_renderer is not None:
+            self.mujoco_renderer.close()
