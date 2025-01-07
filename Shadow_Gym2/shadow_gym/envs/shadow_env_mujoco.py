@@ -62,22 +62,28 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
         # SETTINGS
         # self.step_limit (integer)         number of calls to step() before episode is cut short (truncates)
         # n_substeps (integer)              number of MuJoCo simulation timesteps per call to step()
+        # step_between_goals                Robot has step_limit_value calls to step() to reach the current goal or the environment is truncated
         # screen_width                      screen_width of each rendered frame. Defaults to DEFAULT_SIZE.
         # screen_height                     screen_height of each rendered frame . Defaults to DEFAULT_SIZE.
         # rotation_threshold (float)        the threshold after which the rotation of a goal is considered achieved. Unit is radians
         # relative_control (bool)           Whether or not the hand is actuated in absolute joint positions or relative to the current joint position
         # randomize_initial_rotation (bool) Whether to set cube orientation to a random orientation at start of episode
+        # fixed_goal                        Fixed Euler goal. Set to None if we are not using a random goal instead of a fixed goal
+        # max_goals                         Maximum number of goals reached before truncating the environment
         # self.target_euler                 Fixed target orientation
         # n_actions (intege)                size of the action space.
         # n_obs (integer)                   number of observations
         # self.fullpath                     Path to Mujoco XML file holding all information on the simulation environment
 
-        self.step_limit = 120
+        self.step_limit = np.inf
+        self.step_between_goals = 100 # 8 seconds real time
         self.n_substeps = 40
         self.rotation_threshold = 0.4
         self.relative_control = False
         self.randomize_initial_rotation = True
-        self.target_euler = [0, 0, 0]
+        self.fixed_goal = None
+        self.max_goals = 50
+
 
         n_actions = 20
         n_obs = 85
@@ -90,9 +96,11 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
 
         # END SETTINGS
         self._load_mujoco_robot()
-        self.timesteps = 0
+        self.step_between_goals_ctr = 0
+        self.goal_counter = 0
         self.previous_angular_diff = np.pi
         self.goal = np.zeros(0)
+        self.timesteps = 0
         self.render_mode = render_mode
         self.mujoco_renderer = MujocoRenderer(
             self.model,
@@ -123,9 +131,11 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
         """
         # Reset environment state
         super().reset(seed=seed)
+        self.step_between_goals_ctr = 0
+        self.goal_counter = 0
         self.timesteps = 0
         self.info = {
-            "success":False,
+            "success": 0,
             "dropped":False,
         }
         self.previous_angular_diff = np.pi
@@ -134,6 +144,7 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
         # Compute initial goal
         self.goal = self._compute_goal()
 
+        # Return obs and info
         obs = self._get_obs()
         if self.render_mode == "human":
             self.render()
@@ -141,7 +152,12 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
 
     def _compute_goal(self):
         """Returns goal quaternion"""
-        target_quat = rotations.euler2quat(self.target_euler)
+        if self.fixed_goal:
+            new_goal = self.fixed_goal.copy()
+        else:
+            # Generate a random goal
+            new_goal = self.np_random.uniform(-np.pi, np.pi, size=3)
+        target_quat = rotations.euler2quat(new_goal)
         target_quat /= np.linalg.norm(target_quat)  # normalized quaternion
         return target_quat
 
@@ -194,6 +210,7 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
         if np.array(action).shape != self.action_space.shape:
             raise ValueError("Action dimension mismatch")
         self.timesteps += 1
+        self.step_between_goals += 1
 
         # Convert discrete action from AI (e.g. 0,1,2) to an angle for the motor
         action = action_low + (bin_sizes / 2) + (bin_sizes * action)
@@ -206,7 +223,11 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
         current_angular_diff = rotations.angular_difference_abs(obs[cube_quat_idx: cube_quat_idx + 4], self.goal)
         if current_angular_diff < self.rotation_threshold:
             reward = 5
-            self.info["success"] = True
+            self.info["success"] += 1
+            # Select a new goal and reset the step_between_goals timer
+            self.goal_counter += 1
+            self.goal = self._compute_goal()
+            self.step_between_goals = 0
         else:
             reward = self.previous_angular_diff - current_angular_diff
             self.previous_angular_diff = current_angular_diff
@@ -216,8 +237,11 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
             self.info["dropped"] = True
             terminated = True
             reward = -20
-        if self.timesteps > self.step_limit:
+        # truncate environment when run out of time to reach current goal or hit maximum number of goals
+        if self.step_between_goals_ctr > self.step_between_goals or self.goal_counter >= self.max_goals:
             truncated = True
+        # if  self.timesteps > self.step_limit:
+        #     truncated = True
 
         if self.render_mode == "human":
             self.render()
