@@ -1,6 +1,6 @@
-from mujoco_backend import MujocoRobot
+from shadow_env_mujoco import ShadowEnvMujoco
 
-env = MujocoRobot(render_mode="human")
+env = ShadowEnvMujoco(render_mode="human")
 print("observation space", env.observation_space.shape)
 print("action space", env.action_space.shape)
 obs = env.reset()

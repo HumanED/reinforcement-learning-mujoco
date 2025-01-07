@@ -6,8 +6,8 @@ import gymnasium
 from gymnasium import spaces
 from gymnasium.utils import EzPickle
 from gymnasium.envs.mujoco.mujoco_rendering import MujocoRenderer
-from .utils import rotations
-from .utils import mujoco_utils
+from ..utils import rotations
+from ..utils import mujoco_utils
 
 DEFAULT_CAMERA_CONFIG = {
     "distance": 0.5,
@@ -35,7 +35,7 @@ number_of_bins = 11
 bin_sizes = (action_high - action_low) / number_of_bins
 
 
-class MujocoRobot(gymnasium.Env, EzPickle):
+class ShadowEnvMujoco(gymnasium.Env, EzPickle):
     """
     Gymnasium environment of the shadow dexterous hand based on implementation
     from https://github.com/Farama-Foundation/Gymnasium-Robotics
@@ -84,16 +84,11 @@ class MujocoRobot(gymnasium.Env, EzPickle):
         self.action_space = gymnasium.spaces.MultiDiscrete(nvec=[11] * n_actions)
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(n_obs,), dtype=np.float32)
 
-        self.fullpath = os.path.join(os.path.dirname(__file__), "resources", "hand", "manipulate_block.xml")
+        self.fullpath = os.path.join(os.path.dirname(__file__), "../resources", "hand", "manipulate_block.xml")
         self.screen_width = 1200
         self.screen_height = 800
 
         # END SETTINGS
-
-        dt = self.model.opt.timestep * self.n_substeps
-        assert (
-                int(np.round(1.0 / dt)) == self.metadata["render_fps"]
-        ), f'Expected value: {int(np.round(1.0 / dt))}, Actual value: {self.metadata["render_fps"]}'
         self._load_mujoco_robot()
         self.timesteps = 0
         self.previous_angular_diff = np.pi
@@ -129,6 +124,10 @@ class MujocoRobot(gymnasium.Env, EzPickle):
         # Reset environment state
         super().reset(seed=seed)
         self.timesteps = 0
+        self.info = {
+            "success":False,
+            "dropped":False,
+        }
         self.previous_angular_diff = np.pi
         self._reset_sim()
 
@@ -138,7 +137,7 @@ class MujocoRobot(gymnasium.Env, EzPickle):
         obs = self._get_obs()
         if self.render_mode == "human":
             self.render()
-        return obs, {}
+        return obs, self.info
 
     def _compute_goal(self):
         """Returns goal quaternion"""
@@ -201,21 +200,20 @@ class MujocoRobot(gymnasium.Env, EzPickle):
         self._apply_action(action)
 
         obs = self._get_obs()
-        info = {"success": False, "dropped": False}
 
         terminated = truncated = False
         cube_quat_idx = 18
         current_angular_diff = rotations.angular_difference_abs(obs[cube_quat_idx: cube_quat_idx + 4], self.goal)
         if current_angular_diff < self.rotation_threshold:
             reward = 5
-            info["success"] = True
+            self.info["success"] = True
         else:
             reward = self.previous_angular_diff - current_angular_diff
             self.previous_angular_diff = current_angular_diff
         cube_posz_idx = 17
         if obs[cube_posz_idx] < -0.05:
             # Cube is dropped
-            info["dropped"] = True
+            self.info["dropped"] = True
             terminated = True
             reward = -20
         if self.timesteps > self.step_limit:
@@ -224,7 +222,7 @@ class MujocoRobot(gymnasium.Env, EzPickle):
         if self.render_mode == "human":
             self.render()
 
-        return obs, reward, terminated, truncated, info
+        return obs, reward, terminated, truncated, self.info
 
     def _apply_action(self, action):
         """Sends AI action to Mujoco simulation and steps simulation to execute the action"""
