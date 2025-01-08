@@ -210,7 +210,7 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
         if np.array(action).shape != self.action_space.shape:
             raise ValueError("Action dimension mismatch")
         self.timesteps += 1
-        self.step_between_goals += 1
+        self.step_between_goals_ctr += 1
 
         # Convert discrete action from AI (e.g. 0,1,2) to an angle for the motor
         action = action_low + (bin_sizes / 2) + (bin_sizes * action)

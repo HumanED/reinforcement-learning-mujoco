@@ -31,8 +31,8 @@ existing_model_file = "PPO-21-shadowgym-ethan/11 500 000"  # no need .zip extens
 
 # Run name should have model, unique number, and optionally a description
 # run_name = "PPO" + "-" + "20" + "-" + "shadowgym-ethan"
-this_run_name = "PPO-25-shadowgym-ethan"
-saving_timesteps_interval = 200_000
+this_run_name = "PPO-26-shadowgym-ethan"
+saving_timesteps_interval = 250_000
 start_saving = 1_000_000
 seed=1
 
@@ -79,7 +79,7 @@ def clip_observation(obs):
     return np.clip(obs,a_min=obs.mean() - (5 * obs.std()), a_max=obs.mean() + (5 * obs.std()))
 if __name__ == "__main__":
     rewards_callback = None
-    num_envs = 20  # Number of parallel environments
+    num_envs = 8  # Number of parallel environments. Please have this equal to number of CPU cores
 
     if vectorized_env:
         def make_env():
