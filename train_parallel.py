@@ -31,8 +31,8 @@ existing_model_file = "PPO-21-shadowgym-ethan/11 500 000"  # no need .zip extens
 
 # Run name should have model, unique number, and optionally a description
 # run_name = "PPO" + "-" + "20" + "-" + "shadowgym-ethan"
-this_run_name = "PPO-26-shadowgym-ethan"
-saving_timesteps_interval = 250_000
+this_run_name = "PPO-27-shadowgym-ethan"
+saving_timesteps_interval = 250_000  # 250_000
 start_saving = 1_000_000
 seed=1
 
