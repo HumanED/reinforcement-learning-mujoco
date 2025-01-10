@@ -81,6 +81,7 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
 
         n_actions = 20
         n_obs = 85
+        # For each joint, action is 0,1,2..10 (11 possible values)
         self.action_space = gymnasium.spaces.MultiDiscrete(nvec=[11] * n_actions)
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(n_obs,), dtype=np.float32)
 
@@ -195,15 +196,24 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
             raise ValueError("Action dimension mismatch")
         self.timesteps += 1
 
-        # Convert discrete action from AI (e.g. 0,1,2) to an angle for the motor
-        action = action_low + (bin_sizes / 2) + (bin_sizes * action)
+        # Rescale the angle between -1 and 1. See action space of https://robotics.farama.org/envs/shadow_dexterous_hand/manipulate_block/
+        # See second min-max normalization formula https://en.wikipedia.org/wiki/Feature_scaling
+        # TODO: Angular diff change formula. Check previous formula and wikipedia
+        action = -1 + ((action) * 2) / 10
         self._apply_action(action)
 
         obs = self._get_obs()
 
+        # Alternative formula
+        # Subtract quaternions and extract angle between them.
+        quat_diff = rotations.quat_mul(obs[18: 18 + 4], rotations.quat_conjugate(self.goal.copy()))
+        angle_diff = 2 * np.arccos(np.clip(quat_diff[..., 0], -1.0, 1.0))
+
+
         terminated = truncated = False
         cube_quat_idx = 18
         current_angular_diff = rotations.angular_difference_abs(obs[cube_quat_idx: cube_quat_idx + 4], self.goal)
+        assert angle_diff - current_angular_diff < 1E-8, f"angle_diff {angle_diff} current_angular_diff {current_angular_diff}"
         if current_angular_diff < self.rotation_threshold:
             reward = 5
             self.info["success"] = True
@@ -271,6 +281,7 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
         # cube position and orientation. (x,y,z, qw, qx, qy, qz)
         cube_qpos = mujoco_utils.get_joint_qpos(self.model, self.data, "object:joint")
 
+        # quat_diff based on _goal_distance in Gymnasium-robotics manipulate.py
         quat_diff = rotations.quat_mul(cube_qpos[..., 3:], rotations.quat_conjugate(self.goal))
         observation = np.concatenate([fingertip_pos, cube_qpos, self.goal, quat_diff, robot_qpos, robot_qvel, cube_qvel])
         return observation
