@@ -105,6 +105,8 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
         self.info = {
             "success": 0,
             "dropped":False,
+            "timesteps":0,
+            "dt": 0
         }
         self.render_mode = render_mode
         self.mujoco_renderer = MujocoRenderer(
@@ -139,9 +141,13 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
         self.step_between_goals_count = 0
         self.goal_counter = 0
         self.timesteps = 0
+        # Time between each frame in rendering
+        dt = self.model.opt.timestep * self.N_SUBSTEPS
         self.info = {
             "success": 0,
             "dropped":False,
+            "dt": dt,
+            "timesteps":0
         }
         self.previous_angular_diff = np.pi
         self._reset_sim()
@@ -216,9 +222,11 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
             raise ValueError("Action dimension mismatch")
         # self.timesteps += 1
         self.step_between_goals_count += 1
+        self.info["timesteps"] += 1
 
-        # Convert discrete action from AI (e.g. 0,1,2) to an angle for the motor
-        action = action_low + (bin_sizes / 2) + (bin_sizes * action)
+        # Rescale the angle between -1 and 1. See action space of https://robotics.farama.org/envs/shadow_dexterous_hand/manipulate_block/
+        # See second min-max normalization formula https://en.wikipedia.org/wiki/Feature_scaling
+        action = -1 + (action * 2) / 10
         self._apply_action(action)
 
         obs = self._get_obs()

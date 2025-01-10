@@ -60,6 +60,7 @@ if recurrent:
     obs, _ = env.reset()
     while True:
         action, lstm_states = model.predict(obs,state=lstm_states,episode_start=episode_starts, deterministic=True)
+
         obs, rewards, episode_starts, info = env.step(action)
         time.sleep(1/60)
 
@@ -77,12 +78,21 @@ else:
         terminated = False
         truncated = False
         episode_reward = 0
-        obs, _ = env.reset()
+        obs, info = env.reset()
+        time_between_frames = info["dt"]
+        # Each frame should have a gap of 80ms for the video to match real time. Each frame represents simulation moving by 80ms
+        # Add a time.sleep delay so simulation moves at same speed as if it were a real robot
+        # info["dt"] should be 0.08
         while not terminated and not truncated:
+            start_time = time.time()
             action, _ = model.predict(obs)
             obs, reward, terminated, truncated, info = env.step(action)
+            print("rew",reward)
+            time_to_process = time.time() - start_time
             episode_reward += reward
-            time.sleep(0.03)# proper time
+            delay_time = time_between_frames - time_to_process
+            if (delay_time > 0):
+                time.sleep(delay_time)# proper time
         print(f"episode_reward:{episode_reward:.3f} info {info}")
         time.sleep(1) # Pause a bit before resetting environment
         if vectorized_env:

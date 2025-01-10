@@ -543,6 +543,6 @@ def euler2quat_vel(euler: np.ndarray):
     # .norm( ) is np.sqrt(x**2 + y**2 + x**2)
     # Since Mujoco provides angular rotation in radians per second. deltaTime is 1 (1 second) so can be omitted
     magnitude = np.linalg.norm(half)
-    if (magnitude > 0):
+    if magnitude > 0:
         half *= np.sin(magnitude) / magnitude
     return np.array([np.cos(magnitude), half[0], half[1], half[2]])
