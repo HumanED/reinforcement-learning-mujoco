@@ -198,24 +198,17 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
 
         # Rescale the angle between -1 and 1. See action space of https://robotics.farama.org/envs/shadow_dexterous_hand/manipulate_block/
         # See second min-max normalization formula https://en.wikipedia.org/wiki/Feature_scaling
-        # TODO: Angular diff change formula. Check previous formula and wikipedia
-        action = -1 + ((action) * 2) / 10
+        action = -1 + (action * 2) / 10
         self._apply_action(action)
 
         obs = self._get_obs()
 
-        # Alternative formula
-        # Subtract quaternions and extract angle between them.
-        quat_diff = rotations.quat_mul(obs[18: 18 + 4], rotations.quat_conjugate(self.goal.copy()))
-        angle_diff = 2 * np.arccos(np.clip(quat_diff[..., 0], -1.0, 1.0))
-
-
         terminated = truncated = False
         cube_quat_idx = 18
-        current_angular_diff = rotations.angular_difference_abs(obs[cube_quat_idx: cube_quat_idx + 4], self.goal)
-        assert angle_diff - current_angular_diff < 1E-8, f"angle_diff {angle_diff} current_angular_diff {current_angular_diff}"
+        current_angular_diff = rotations.angular_difference_abs(obs[cube_quat_idx: cube_quat_idx + 4], self.goal.copy())
+
         if current_angular_diff < self.rotation_threshold:
-            reward = 5
+            reward = 5 + self.previous_angular_diff - current_angular_diff
             self.info["success"] = True
         else:
             reward = self.previous_angular_diff - current_angular_diff
@@ -235,7 +228,10 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
         return obs, reward, terminated, truncated, self.info
 
     def _apply_action(self, action):
-        """Sends AI action to Mujoco simulation and steps simulation to execute the action"""
+        """
+        Sends AI action to Mujoco simulation and steps simulation to execute the action
+        Expects a list of n_action numbers where each number is in range [-1, 1]
+        """
         ctrlrange = self.model.actuator_ctrlrange
         actuation_range = (ctrlrange[:, 1] - ctrlrange[:, 0]) / 2.0
 
