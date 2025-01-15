@@ -516,7 +516,8 @@ def quat_from_angle_and_axis(angle, axis):
 
 def angular_difference_abs(quat1: np.ndarray, quat2: np.ndarray) -> np.float32:
     """
-    Returns angular difference in radians between two quaternions. quaternion is [w, x, y, z]
+    Returns angular difference in radians between two quaternions. quaternion is [w, x, y, z]. Based on formula from Gymnasium-robotics
+    Do NOT use the quat2axisangle(quat_diff) formula since np.arcsin() can throw an error.
     See
     Angular difference between quaternions: https://uk.mathworks.com/help/driving/ref/quaternion.dist.html
     Magnitude of axis-angle notation (also known as rotation vector notation) is angle: https://en.wikipedia.org/wiki/Axis%E2%80%93angle_representation
@@ -525,7 +526,7 @@ def angular_difference_abs(quat1: np.ndarray, quat2: np.ndarray) -> np.float32:
     quat1 = quat1 / np.linalg.norm(quat1)
     quat2 = quat2 / np.linalg.norm(quat2)
     quat_diff = quat_mul(quat1, quat_conjugate(quat2))
-    axis, angle = quat2axisangle(quat_diff)
+    angle = 2 * np.arccos(np.clip(quat_diff[..., 0], -1.0, 1.0))
     return np.abs(angle)
 
 
