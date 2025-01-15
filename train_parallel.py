@@ -22,8 +22,8 @@ Much more advanced training code. Still in development.
 recurrent = False
 vectorized_env = True  # Set to True to use multiple environments
 normalized_env = False
-start_from_existing = False
-existing_model_file = "PPO-21-shadowgym-ethan/11 500 000"  # no need .zip extension
+start_from_existing = True
+existing_model_file = "PPO-31-shadowgym-ethan/2250000"  # no need .zip extension
 # When you want to train PPO-20-shadowgym-ethan more and create PPO-21-shadowgym-ethan
 # Set new_run_name="PPO-21-shadowgym-ethan" and run_name="PPO-20-shadowgym-ethan"
 # A PPO-21 folder is created for the logs and models of the rerun.
@@ -31,7 +31,7 @@ existing_model_file = "PPO-21-shadowgym-ethan/11 500 000"  # no need .zip extens
 
 # Run name should have model, unique number, and optionally a description
 # run_name = "PPO" + "-" + "20" + "-" + "shadowgym-ethan"
-this_run_name = "PPO-29-shadowgym-ethan"
+this_run_name = "PPO-31b-shadowgym-ethan"
 saving_timesteps_interval = 250_000  # 250_000
 start_saving = 1_000_000
 seed=1
