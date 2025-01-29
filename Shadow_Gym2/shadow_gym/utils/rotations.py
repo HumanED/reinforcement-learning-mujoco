@@ -522,10 +522,11 @@ def angular_difference_abs(quat1: np.ndarray, quat2: np.ndarray) -> np.float32:
     Magnitude of axis-angle notation (also known as rotation vector notation) is angle: https://en.wikipedia.org/wiki/Axis%E2%80%93angle_representation
     Default numpy norn on vectors is euclidean norm https://en.wikipedia.org/wiki/Norm_(mathematics)#:~:text=In%20particular%2C%20the%20Euclidean%20distance,of%20a%20vector%20with%20itself.
     """
+
     quat1 = quat1 / np.linalg.norm(quat1)
     quat2 = quat2 / np.linalg.norm(quat2)
     quat_diff = quat_mul(quat1, quat_conjugate(quat2))
-    axis, angle = quat2axisangle(quat_diff)
+    angle = 2 * np.arccos(np.clip(quat_diff[..., 0], -1.0, 1.0))
     return np.abs(angle)
 
 
@@ -543,6 +544,6 @@ def euler2quat_vel(euler: np.ndarray):
     # .norm( ) is np.sqrt(x**2 + y**2 + x**2)
     # Since Mujoco provides angular rotation in radians per second. deltaTime is 1 (1 second) so can be omitted
     magnitude = np.linalg.norm(half)
-    if (magnitude > 0):
+    if magnitude > 0:
         half *= np.sin(magnitude) / magnitude
     return np.array([np.cos(magnitude), half[0], half[1], half[2]])

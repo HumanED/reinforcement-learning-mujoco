@@ -19,8 +19,12 @@
     </asset>
 
     <worldbody>
-        <geom name="floor0" pos="1 1 0" size="1 1 1" type="plane" condim="3" material="floor_mat"></geom>
-        <body name="floor0" pos="1 1 0"></body>
+        <geom name="floor0" pos="1 1 -0.5" size="1 1 1" type="plane" condim="3" material="floor_mat" rgba="1 0 0 0.2"></geom>
+        <body name="floor0" pos="1 1 -0.5"></body>
+<!--        Old floor below -->
+<!--        <geom name="floor0" pos="1 1 0" size="1 1 1" type="plane" condim="3" material="floor_mat"></geom>-->
+<!--        <body name="floor0" pos="1 1 0"></body>-->
+
 
         <include file="robot.xml"></include>
 
