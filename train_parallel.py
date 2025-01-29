@@ -22,8 +22,8 @@ Much more advanced training code. Still in development.
 recurrent = False
 vectorized_env = True  # Set to True to use multiple environments
 normalized_env = False
-start_from_existing = False
-existing_model_file = "PPO-21-shadowgym-ethan/11 500 000"  # no need .zip extension
+start_from_existing = True
+existing_model_file = "PPO-31-shadowgym-ethan/2250000"  # no need .zip extension
 # When you want to train PPO-20-shadowgym-ethan more and create PPO-21-shadowgym-ethan
 # Set new_run_name="PPO-21-shadowgym-ethan" and run_name="PPO-20-shadowgym-ethan"
 # A PPO-21 folder is created for the logs and models of the rerun.
@@ -31,8 +31,13 @@ existing_model_file = "PPO-21-shadowgym-ethan/11 500 000"  # no need .zip extens
 
 # Run name should have model, unique number, and optionally a description
 # run_name = "PPO" + "-" + "20" + "-" + "shadowgym-ethan"
+<<<<<<< HEAD
 this_run_name = "PPO-28-shadowgym-ethan"
 saving_timesteps_interval = 200_000
+=======
+this_run_name = "PPO-33-shadowgym-ethan"
+saving_timesteps_interval = 250_000  # 250_000
+>>>>>>> origin/eidf
 start_saving = 1_000_000
 seed=12345
 
@@ -79,7 +84,7 @@ def clip_observation(obs):
     return np.clip(obs,a_min=obs.mean() - (5 * obs.std()), a_max=obs.mean() + (5 * obs.std()))
 if __name__ == "__main__":
     rewards_callback = None
-    num_envs = 20  # Number of parallel environments
+    num_envs = 8  # Number of parallel environments. Please have this equal to number of CPU cores
 
     if vectorized_env:
         def make_env():
