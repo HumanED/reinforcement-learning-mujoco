@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--This xml plus robot.xml and shared xml files are only files actually used. Others are kept for references or inspeiration-->
 <mujoco>
     <compiler angle="radian" coordinate="local" meshdir="../stls/hand" texturedir="../textures"></compiler>
     <option timestep="0.002" iterations="20" apirate="200">

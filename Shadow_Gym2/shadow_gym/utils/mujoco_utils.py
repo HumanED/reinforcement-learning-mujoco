@@ -9,6 +9,12 @@ try:
 except ImportError as e:
     raise error.DependencyNotInstalled(f"{e}. (HINT: you need to install mujoco")
 
+"""
+A large collection of utility method for interacting with Mujoco.
+See https://github.com/Farama-Foundation/Gymnasium-Robotics/blob/main/gymnasium_robotics/utils/mujoco_utils.py
+for original
+"""
+
 MJ_OBJ_TYPES = [
     "mjOBJ_BODY",
     "mjOBJ_JOINT",
@@ -40,6 +46,7 @@ def get_all_body_pos(model, data, body_names):
 
 
 def get_body_xpos(model, data: MjData, body_name):
+    """Return cartesian position (x,y,z) of one body relative to global frame"""
     body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, body_name)
     assert body_id != -1, f"Joint with name {body_id} is not part of the model!"
     # data.xpos is a 2D array of shape (nbody * 3) where nbody is number of bodies in the simulation.
@@ -48,7 +55,7 @@ def get_body_xpos(model, data: MjData, body_name):
 
 
 def set_joint_qpos(model, data, name, value):
-    """Set the joint positions (qpos) of the model."""
+    """Set the joint positions (qpos) of the model. Used in rendering and resetting the model. Not used in hand control"""
     joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
     assert joint_id != -1, f"Joint with name '{name}' is not part of the model!"
     joint_type = model.jnt_type[joint_id]
@@ -73,7 +80,7 @@ def set_joint_qpos(model, data, name, value):
 
 
 def set_joint_qvel(model, data, name, value):
-    """Set the joints linear and angular (qvel) of the model."""
+    """Set the joints linear and angular (qvel) of the model. Used to lock the ghost cube in rendering"""
     joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
     assert joint_id != -1, f"Joint with name '{name}' is not part of the model!"
     joint_type = model.jnt_type[joint_id]

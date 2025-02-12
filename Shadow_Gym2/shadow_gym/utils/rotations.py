@@ -516,9 +516,11 @@ def quat_from_angle_and_axis(angle, axis):
 
 def angular_difference_abs(quat1: np.ndarray, quat2: np.ndarray) -> np.float32:
     """
-    Returns angular difference in radians between two quaternions. quternion is [w, x, y, z]
+    Returns angular difference in radians between two quaternions. quaternion is [w, x, y, z]. Uses angularDistance = 2*acos(abs(parts(p*conj(q)))); formula
     See
     Angular difference between quaternions: https://uk.mathworks.com/help/driving/ref/quaternion.dist.html
+
+    Also
     Magnitude of axis-angle notation (also known as rotation vector notation) is angle: https://en.wikipedia.org/wiki/Axis%E2%80%93angle_representation
     Default numpy norn on vectors is euclidean norm https://en.wikipedia.org/wiki/Norm_(mathematics)#:~:text=In%20particular%2C%20the%20Euclidean%20distance,of%20a%20vector%20with%20itself.
     """
