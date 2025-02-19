@@ -234,13 +234,6 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
 
         terminated = truncated = False
         cube_quat_idx = 18
-<<<<<<< HEAD
-        current_angular_diff = rotations.angular_difference_abs(obs[cube_quat_idx: cube_quat_idx + 4], self.goal.copy())
-
-        if current_angular_diff < self.rotation_threshold:
-            reward = 5 + self.previous_angular_diff - current_angular_diff
-            self.info["success"] = True
-=======
         current_angular_diff = rotations.angular_difference_abs(obs[cube_quat_idx: cube_quat_idx + 4], self.goal)
         if current_angular_diff < self.ROTATION_THRESHOLD:
             reward = 5
@@ -250,7 +243,6 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
             self.goal = self._compute_goal()
             self.step_between_goals_count = 0
             self.previous_angular_diff = np.pi # Without this, immediately when new goal is given a large negative reward appears
->>>>>>> origin/eidf
         else:
             reward = self.previous_angular_diff - current_angular_diff
             self.previous_angular_diff = current_angular_diff

@@ -102,7 +102,3 @@ else:
             total_success += 1
         episode_count += 1
         print(f"total_success:{total_success} episodes:{episode_count} ratio:{total_success / episode_count}")
-
-
-
-

@@ -31,13 +31,8 @@ existing_model_file = "PPO-31-shadowgym-ethan/2250000"  # no need .zip extension
 
 # Run name should have model, unique number, and optionally a description
 # run_name = "PPO" + "-" + "20" + "-" + "shadowgym-ethan"
-<<<<<<< HEAD
-this_run_name = "PPO-28-shadowgym-ethan"
-saving_timesteps_interval = 200_000
-=======
 this_run_name = "PPO-33-shadowgym-ethan"
 saving_timesteps_interval = 250_000  # 250_000
->>>>>>> origin/eidf
 start_saving = 1_000_000
 seed=12345
 

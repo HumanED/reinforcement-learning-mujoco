@@ -1,16 +1,5 @@
 import mujoco
 # import mediapy as media
-<<<<<<< HEAD
-import subprocess
-# from utils import mujoco_utils
-# from utils.rotations import angular_difference_abs
-# import numpy as np
-import cv2
-
-# model = mujoco.MjModel.from_xml_path("C:/Users/ethan/Documents/Edinburgh_Uni/HumanED/Shadow_gym2_project/Shadow_Gym2/envs/shadow_hand/resources/hand/manipulate_block.xml")
-# data = mujoco.MjData(model)
-# print(model.option.timestep)
-=======
 # import subprocess
 # from utils import mujoco_utils
 # from utils.rotations import angular_difference_abs
@@ -26,7 +15,6 @@ env = ShadowEnvMujoco()
 
 
 
->>>>>>> origin/eidf
 
 # print(data.qpos, data.qpos.shape)
 # print(data.qvel, data.qvel.shape)
