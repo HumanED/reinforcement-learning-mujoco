@@ -11,7 +11,7 @@ from Shadow_Gym2.shadow_gym.envs.shadow_env_mujoco import ShadowEnvMujoco
 
 # SETTINGS
 num_ep_evaluate = 100
-model_folder_zip = "PPO-33-shadowgym-ethan/107750000.zip"
+model_folder_zip = "PPO-33b-shadowgym-ethan/38750000.zip"
 
 
 def make_env():

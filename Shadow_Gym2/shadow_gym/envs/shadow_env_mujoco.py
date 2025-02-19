@@ -141,12 +141,6 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
         self.total_timesteps = 0
         # Time between each frame in rendering
         dt = self.model.opt.timestep * self.N_SUBSTEPS
-        self.info = {
-            "success": 0,
-            "dropped": False,
-            "dt": dt,
-            "total_timesteps": 0
-        }
         # Set to np.pi so that in the first step of solving for a new goal the 'episode reward = self.previous_angular_diff - current_angular_diff' in step()
         # is guaranteed to receive a nonnegative value. Don't want to penalise AI for achieving a goal and moving to next goal.
         self.previous_angular_diff = np.pi
@@ -154,6 +148,14 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
 
         # Compute initial goal
         self.goal = self._compute_goal()
+
+        self.info = {
+            "success": 0,
+            "dropped": False,
+            "dt": dt,
+            "total_timesteps": 0,
+            "goal_rotation": self.goal,
+        }
 
         # Return obs and info
         obs = self._get_obs()
@@ -241,6 +243,7 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
             # Select a new goal and reset the steps_between_goals timer
             self.goals_achieved_count += 1
             self.goal = self._compute_goal()
+            self.info["goal_rotation"] = self.goal
             self.steps_between_goals_count = 0
             # Set to np.pi so that in the first step of solving for a new goal the 'episode reward = self.previous_angular_diff - current_angular_diff' in step()
             # is guaranteed to receive a nonnegative value. Don't want to penalise AI for achieving a goal and moving to next goal.
@@ -344,6 +347,10 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
             hidden_id = self._model_names.geom_name2id["object_hidden"]
             self.model.geom_rgba[hidden_id, 3] = 1.0
         mujoco.mj_forward(self.model, self.data)
+
+
+
+
         return self.mujoco_renderer.render(self.render_mode)
 
     def close(self):
