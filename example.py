@@ -41,7 +41,10 @@ env = ShadowEnvMujoco()
 # joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
 # data.xpos
 
-# subprocess.run('C:/Users/ethan/Documents/Edinburgh_Uni/HumanED/mujoco-3.1.5-windows-x86_64/bin/simulate.exe "C:/Users/ethan/Documents/Edinburgh_Uni/HumanED/Shadow_gym2_project/Shadow-Gym2/envs/shadow_hand/resources/hand/manipulate_block.xml" ')
+subprocess.run('C:/Users/ethan/Documents/Edinburgh_Uni/HumanED/mujoco-3.1.5-windows-x86_64/bin/simulate.exe "C:/Users/ethan/Documents/Edinburgh_Uni/HumanED/Shadow_gym2_project/Shadow_Gym2/shadow_gym/resources/hand/manipulate_block.xml" ')
+
+
+
 # with mujoco.Renderer(model) as renderer:
 #     mujoco.mj_forward(model, data)
 #     renderer.update_scene(data)
