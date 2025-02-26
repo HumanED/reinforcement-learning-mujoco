@@ -8,6 +8,7 @@ from gymnasium.utils import EzPickle
 from gymnasium.envs.mujoco.mujoco_rendering import MujocoRenderer
 from ..utils import rotations
 from ..utils import mujoco_utils
+from ..utils import ema
 
 DEFAULT_CAMERA_CONFIG = {
     "distance": 0.5,
@@ -82,6 +83,7 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
         self.RANDOMIZE_INITIAL_ROTATION = True
         self.FIXED_GOAL = None
         self.MAX_GOALS = 50
+        self.EMA = ema.EMA()
 
         N_ACTIONS = 20
         N_OBS = 85
@@ -154,7 +156,6 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
             "dropped": False,
             "dt": dt,
             "total_timesteps": 0,
-            "goal_rotation": self.goal,
         }
 
         # Return obs and info
@@ -229,6 +230,8 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
         # Rescale the angle between -1 and 1 for _apply_action(). See action space of https://robotics.farama.org/envs/shadow_dexterous_hand/manipulate_block/
         # See second min-max normalization formula https://en.wikipedia.org/wiki/Feature_scaling
         action = -1 + (action * 2) / 10
+        if (self.EMA != None):
+            action = self.EMA.update(action)
         self._apply_action(action)
 
         obs = self._get_obs()
@@ -243,7 +246,7 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
             # Select a new goal and reset the steps_between_goals timer
             self.goals_achieved_count += 1
             self.goal = self._compute_goal()
-            self.info["goal_rotation"] = self.goal
+
             self.steps_between_goals_count = 0
             # Set to np.pi so that in the first step of solving for a new goal the 'episode reward = self.previous_angular_diff - current_angular_diff' in step()
             # is guaranteed to receive a nonnegative value. Don't want to penalise AI for achieving a goal and moving to next goal.

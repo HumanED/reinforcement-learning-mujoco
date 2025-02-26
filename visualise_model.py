@@ -7,7 +7,7 @@ import os
 import time
 
 # SETTINGS
-model_folder_zip = "PPO-33b-shadowgym-ethan/38500000.zip"
+model_folder_zip = "PPO-33b-shadowgym-ethan/48500000.zip"
 
 
 def make_env():
@@ -46,7 +46,7 @@ def main():
         previous_success = 0
 
         print("DEBUG INFO")
-        print(f"Target rotation {info['goal_rotation']}")
+        # print(f"Target rotation {info['goal_rotation']}")
         while not terminated and not truncated:
             start_time = time.time()
             action, _ = model.predict(obs)
@@ -57,7 +57,7 @@ def main():
             if (delay_time > 0):
                 time.sleep(delay_time)  # proper time
             if info["success"] > previous_success:
-                print(f"Target rotation reached. New target is {info['goal_rotation']}. Total success {info['success']}")
+                print(f"Target rotation reached. Total success {info['success']}")
                 previous_success = info["success"]
                 time.sleep(0.5) # Pause a bit before moving to new goal
 
