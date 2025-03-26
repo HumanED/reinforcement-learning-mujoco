@@ -83,7 +83,7 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
         self.RANDOMIZE_INITIAL_ROTATION = True
         self.FIXED_GOAL = None
         self.MAX_GOALS = 50
-        self.EMA = ema.EMA()
+        self.EMA = None
 
         N_ACTIONS = 20
         N_OBS = 85
