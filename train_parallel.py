@@ -17,13 +17,13 @@ Created by Ethan Cheam
 # SETTINGS
 vectorized_env = True  # Set to True to use multiple environments
 start_from_existing = True
-old_model_file = "PPO-33b-shadowgym-ethan/11750000"
+old_model_file = "PPO-33-shadowgym-ethan/200000000"
 # When you want to train PPO-20-shadowgym-ethan more and create PPO-21-shadowgym-ethan
 # Set old_model_file="PPO-21-shadowgym-ethan" and this_run_name="PPO-20-shadowgym-ethan"
 
 # Run name should have model, unique number, and your name
 # PPO 34 is with ema
-this_run_name = "PPO-33c-shadowgym-ethan"
+this_run_name = "PPO-33b-shadowgym-ethan"
 saving_timesteps_interval = 250_000
 start_saving = 1_000_000
 # Seed sets random number generators in model and environment
