@@ -79,7 +79,7 @@ class ShadowEnvMujoco(gymnasium.Env, EzPickle):
         self.STEP_BETWEEN_GOALS = 100  # 8 seconds real time
         self.N_SUBSTEPS = 40
         self.ROTATION_THRESHOLD = 0.4
-        self.RELATIVE_CONTROL = False
+        self.RELATIVE_CONTROL = True
         self.RANDOMIZE_INITIAL_ROTATION = True
         self.FIXED_GOAL = None
         self.MAX_GOALS = 50
