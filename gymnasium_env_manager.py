@@ -1,5 +1,5 @@
 import gymnasium
-
+# This is an experiment - it may not work
 while True:
     print("list:        lists registered environments")
     print("delete env:  deletes env from environments")

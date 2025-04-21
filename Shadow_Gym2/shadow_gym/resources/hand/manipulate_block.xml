@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--This xml plus robot.xml and shared xml files are only files actually used. Others are kept for references or inspeiration-->
 <mujoco>
     <compiler angle="radian" coordinate="local" meshdir="../stls/hand" texturedir="../textures"></compiler>
     <option timestep="0.002" iterations="20" apirate="200">
@@ -24,6 +25,7 @@
 <!--        Old floor below -->
 <!--        <geom name="floor0" pos="1 1 0" size="1 1 1" type="plane" condim="3" material="floor_mat"></geom>-->
 <!--        <body name="floor0" pos="1 1 0"></body>-->
+
 
         <include file="robot.xml"></include>
 
