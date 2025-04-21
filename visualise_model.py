@@ -7,7 +7,7 @@ import os
 import time
 
 # SETTINGS
-model_folder_zip = "PPO-33b-shadowgym-ethan/2250000.zip"
+model_folder_zip = "PPO-33-shadowgym-ethan-FINAL/240000000FINAL.zip"
 
 
 def make_env():
