@@ -1,4 +1,4 @@
-# Training a robotic hand in simulation to rotate a cube to a target orientation
+# Training a robotic hand in simulation to rotate a cube to a target orientation (complete)
 
 This project follows the paper [Learning Dexterity](https://arxiv.org/pdf/1808.00177) by OpenAI and is derived from the Gymnasium Robotics
 [shadow dextrous hand](https://robotics.farama.org/envs/shadow_dexterous_hand/) environment with extensive modifications to follow the paper.
